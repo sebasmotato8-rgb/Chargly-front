@@ -141,16 +141,16 @@ function About() {
           </div>
         </div>
         <div className="relative flex justify-center">
-          <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden relative group">
-            <img src="/img/chair.png" alt="Silla de barbería" className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent rounded-2xl" />
-            <div className="absolute bottom-6 left-6 right-6 z-10">
+          <div className="w-full max-w-md aspect-square rounded-2xl overflow-hidden relative group bg-black">
+            <img src="/img/chair.png" alt="Silla de barbería" className="w-full h-full object-fill group-hover:scale-105 transition-transform duration-500" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent" />
+            <div className="absolute bottom-5 left-5 right-5 z-10">
               <p className="font-display text-lg text-amber-400">Zac Barber</p>
               <p className="text-sm text-zinc-400 mt-1">Donde tu estilo cobra vida</p>
             </div>
           </div>
-          <div className="absolute -bottom-5 -right-5 h-20 w-20 rounded-2xl overflow-hidden shadow-xl border border-amber-500/15">
-            <img src="/img/scissors.png" alt="" className="w-full h-full object-cover" />
+          <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-xl overflow-hidden shadow-xl bg-black">
+            <img src="/img/scissors.png" alt="" className="w-full h-full object-fill" />
           </div>
         </div>
       </div>
