@@ -143,7 +143,7 @@ function About() {
         <div className="relative flex justify-center">
           <div className="w-full max-w-sm aspect-[3/4] rounded-2xl bg-zinc-900/80 border border-zinc-800 overflow-hidden relative group">
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-zinc-900/20 to-black/30 z-10" />
-            <img src="/img/chair.png" alt="Silla de barbería" className="absolute inset-0 w-full h-full object-contain p-10 group-hover:scale-105 transition-transform duration-500" />
+            <img src="/img/chair.png" alt="Silla de barbería" className="absolute inset-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500" />
             <div className="absolute bottom-6 left-6 right-6 z-20">
               <p className="font-display text-lg text-amber-400">Zac Barber</p>
               <p className="text-sm text-zinc-400 mt-1">Donde tu estilo cobra vida</p>
@@ -177,7 +177,7 @@ function Services({ onChat }: { onChat: (m?: string) => void }) {
           {items.map(s => (
             <div key={s.name} className="group rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6 hover:border-amber-500/40 hover:bg-zinc-900/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/5">
               <div className="flex items-start justify-between mb-5">
-                <div className="h-14 w-14 rounded-xl bg-amber-500/10 flex items-center justify-center p-2"><Ico name={s.icon} size={40} /></div>
+                <div className="h-14 w-14 rounded-xl bg-amber-500/10 flex items-center justify-center p-1"><Ico name={s.icon} size={44} /></div>
                 <span className="text-amber-400 text-xl font-display font-semibold">{s.price}</span>
               </div>
               <h3 className="text-base font-semibold text-white mb-2">{s.name}</h3>
@@ -212,7 +212,7 @@ function Gallery() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {items.map((it, i) => (
             <div key={i} className="group relative aspect-square rounded-2xl bg-zinc-900/60 border border-zinc-800/60 overflow-hidden hover:border-amber-500/40 transition-all duration-500 cursor-pointer">
-              <img src={ICONS[it.icon]} alt={it.label} className="absolute inset-0 w-full h-full object-contain p-8 sm:p-12 group-hover:scale-110 transition-transform duration-700" />
+              <img src={ICONS[it.icon]} alt={it.label} className="absolute inset-0 w-full h-full object-contain p-4 sm:p-6 group-hover:scale-110 transition-transform duration-700" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
               <div className="absolute bottom-4 left-5 right-5 translate-y-3 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <p className="text-sm font-semibold text-amber-400">{it.label}</p>
@@ -242,7 +242,7 @@ function Benefits() {
         <div className="grid sm:grid-cols-2 gap-5">
           {items.map(b => (
             <div key={b.t} className="flex gap-5 rounded-2xl border border-zinc-800/60 bg-zinc-900/30 p-7 hover:border-amber-500/30 hover:bg-zinc-900/60 transition-all duration-300">
-              <div className="flex-shrink-0 h-16 w-16 rounded-xl bg-amber-500/10 flex items-center justify-center p-2"><Ico name={b.i} size={40} /></div>
+              <div className="flex-shrink-0 h-16 w-16 rounded-xl bg-amber-500/10 flex items-center justify-center p-1"><Ico name={b.i} size={48} /></div>
               <div><h3 className="text-base font-semibold text-white mb-1.5">{b.t}</h3><p className="text-sm text-zinc-500 leading-relaxed">{b.d}</p></div>
             </div>
           ))}
@@ -298,8 +298,8 @@ function Process({ onChat }: { onChat: () => void }) {
           {steps.map((s, i) => (
             <div key={s.n} className="text-center group relative">
               {i < 3 && <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-px bg-gradient-to-r from-amber-500/20 to-transparent" />}
-              <div className="relative mx-auto mb-5 h-20 w-20 rounded-2xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/20 group-hover:scale-110 transition-all duration-300 p-3">
-                <Ico name={s.i} size={44} />
+              <div className="relative mx-auto mb-5 h-20 w-20 rounded-2xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center group-hover:bg-amber-500/20 group-hover:scale-110 transition-all duration-300 p-1">
+                <Ico name={s.i} size={56} />
               </div>
               <span className="text-amber-500/40 text-[11px] font-bold tracking-widest">{s.n}</span>
               <h3 className="text-white font-semibold mt-1.5 mb-2">{s.t}</h3>
