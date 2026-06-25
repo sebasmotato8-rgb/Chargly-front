@@ -105,6 +105,8 @@ function parseApt(row: RawApt): Apt {
 export default function Dashboard() {
   const [todayApts, setTodayApts] = useState<Apt[]>([])
   const [upcomingApts, setUpcomingApts] = useState<Apt[]>([])
+  const API_URL = import.meta.env.VITE_API_URL
+  const SHOP_ID = import.meta.env.VITE_SHOP_ID
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'today' | 'upcoming' | 'history'>('today')
   const [toast, setToast] = useState('')
@@ -121,9 +123,94 @@ export default function Dashboard() {
   const [configSlot, setConfigSlot] = useState('30')
   const [configAdvance, setConfigAdvance] = useState('60')
   const [configMaxDays, setConfigMaxDays] = useState('30')
+  const [showAvailability, setShowAvailability] = useState(false)
 
-  const API_URL = import.meta.env.VITE_API_URL
-  const SHOP_ID = import.meta.env.VITE_SHOP_ID
+  const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+  type Schedule = { day_of_week: number; start_time: string; end_time: string; is_active: boolean; barber_id: string }
+  type TimeOff = { id: string; barber_id: string; starts_at: string; ends_at: string; reason: string | null; users?: { full_name: string } | null }
+  type Closure = { id: string; closure_date: string; reason: string | null }
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [timeOffs, setTimeOffs] = useState<TimeOff[]>([])
+  const [closures, setClosures] = useState<Closure[]>([])
+  const [availLoading, setAvailLoading] = useState(false)
+  const [newTimeOff, setNewTimeOff] = useState({ date: '', start: '', end: '', reason: '' })
+  const [newClosure, setNewClosure] = useState({ date: '', reason: '' })
+
+  const fetchAvailability = useCallback(async () => {
+    if (!API_URL || !SHOP_ID) return
+    setAvailLoading(true)
+    try {
+      const [sRes, tRes, cRes] = await Promise.all([
+        fetch(`${API_URL}/public/dashboard/schedules`, { headers: { 'x-shop-id': SHOP_ID } }),
+        fetch(`${API_URL}/public/dashboard/time-off`, { headers: { 'x-shop-id': SHOP_ID } }),
+        fetch(`${API_URL}/public/dashboard/closures`, { headers: { 'x-shop-id': SHOP_ID } }),
+      ])
+      const sJson = await sRes.json()
+      const tJson = await tRes.json()
+      const cJson = await cRes.json()
+      const rawSch = (sJson.data ?? []) as Array<{ barber_id: string; day_of_week: number; start_time: string; end_time: string; is_active: boolean }>
+      if (rawSch.length > 0) {
+        setSchedules(rawSch.map(s => ({ day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time, is_active: s.is_active, barber_id: s.barber_id })))
+      } else {
+        setSchedules(Array.from({ length: 7 }, (_, i) => ({
+          day_of_week: i, start_time: '09:00', end_time: '18:00', is_active: i >= 1 && i <= 6, barber_id: '',
+        })))
+      }
+      setTimeOffs(tJson.data ?? [])
+      setClosures(cJson.data ?? [])
+    } catch { /* ignore */ }
+    setAvailLoading(false)
+  }, [API_URL, SHOP_ID])
+
+  async function saveSchedules() {
+    for (const s of schedules) {
+      if (s.is_active && s.end_time <= s.start_time) {
+        setToast(`Error: hora fin debe ser mayor que inicio en ${DAYS[s.day_of_week]}`)
+        return
+      }
+    }
+    await fetch(`${API_URL}/public/dashboard/schedules`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-shop-id': SHOP_ID },
+      body: JSON.stringify(schedules),
+    })
+    setToast('Horarios guardados')
+  }
+
+  async function addTimeOff() {
+    if (!newTimeOff.date || !newTimeOff.start || !newTimeOff.end) return
+    const starts_at = `${newTimeOff.date}T${newTimeOff.start}:00-05:00`
+    const ends_at = `${newTimeOff.date}T${newTimeOff.end}:00-05:00`
+    await fetch(`${API_URL}/public/dashboard/time-off`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-shop-id': SHOP_ID },
+      body: JSON.stringify({ barber_id: schedules[0]?.barber_id ?? '', starts_at, ends_at, reason: newTimeOff.reason || null }),
+    })
+    setNewTimeOff({ date: '', start: '', end: '', reason: '' })
+    setToast('Bloqueo guardado')
+    fetchAvailability()
+  }
+
+  async function deleteTimeOff(id: string) {
+    await fetch(`${API_URL}/public/dashboard/time-off/${id}`, { method: 'DELETE', headers: { 'x-shop-id': SHOP_ID } })
+    setTimeOffs(p => p.filter(t => t.id !== id))
+    setToast('Bloqueo eliminado')
+  }
+
+  async function addClosure() {
+    if (!newClosure.date) return
+    await fetch(`${API_URL}/public/dashboard/closures`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-shop-id': SHOP_ID },
+      body: JSON.stringify({ closure_date: newClosure.date, reason: newClosure.reason || null }),
+    })
+    setNewClosure({ date: '', reason: '' })
+    setToast('Día de cierre guardado')
+    fetchAvailability()
+  }
+
+  async function deleteClosure(id: string) {
+    await fetch(`${API_URL}/public/dashboard/closures/${id}`, { method: 'DELETE', headers: { 'x-shop-id': SHOP_ID } })
+    setClosures(p => p.filter(c => c.id !== id))
+    setToast('Día de cierre eliminado')
+  }
 
   const fetchAppointments = useCallback(async () => {
     if (!API_URL || !SHOP_ID) { setLoading(false); return }
@@ -292,9 +379,101 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <button onClick={() => { setShowAvailability(!showAvailability); if (!showAvailability) fetchAvailability() }}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${showAvailability ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}>🕐 Disponibilidad</button>
           <button onClick={() => setBlockModal(true)} className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">🚫 Bloquear Horario</button>
           <button onClick={() => setConfigModal(true)} className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors">⚙️ Configuración</button>
         </div>
+
+        {showAvailability && (
+          <div className="space-y-6">
+            {availLoading ? <div className="text-center py-8"><div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" /></div> : (
+              <>
+                {/* Weekly Schedule */}
+                <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-white">Horario Semanal</h3>
+                    <button onClick={saveSchedules} className="rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-black hover:bg-amber-400 transition-colors">Guardar</button>
+                  </div>
+                  <div className="space-y-2">
+                    {schedules.map((s, i) => (
+                      <div key={i} className="flex items-center gap-3 rounded-lg bg-zinc-800/50 px-4 py-3">
+                        <label className="flex items-center gap-2 w-28 flex-shrink-0">
+                          <input type="checkbox" checked={s.is_active} onChange={e => setSchedules(p => p.map((x, j) => j === i ? { ...x, is_active: e.target.checked } : x))}
+                            className="rounded border-zinc-600 bg-zinc-700 text-amber-500 focus:ring-amber-500" />
+                          <span className={`text-sm ${s.is_active ? 'text-white' : 'text-zinc-600'}`}>{DAYS[s.day_of_week]}</span>
+                        </label>
+                        {s.is_active ? (
+                          <div className="flex items-center gap-2">
+                            <input type="time" value={s.start_time} onChange={e => setSchedules(p => p.map((x, j) => j === i ? { ...x, start_time: e.target.value } : x))}
+                              className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+                            <span className="text-zinc-500 text-xs">a</span>
+                            <input type="time" value={s.end_time} onChange={e => setSchedules(p => p.map((x, j) => j === i ? { ...x, end_time: e.target.value } : x))}
+                              className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+                          </div>
+                        ) : <span className="text-xs text-zinc-600">No disponible</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time Off */}
+                <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6">
+                  <h3 className="text-sm font-semibold text-white mb-4">Bloqueos / Excepciones</h3>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <input type="date" value={newTimeOff.date} onChange={e => setNewTimeOff(p => ({ ...p, date: e.target.value }))}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none" />
+                    <input type="time" value={newTimeOff.start} onChange={e => setNewTimeOff(p => ({ ...p, start: e.target.value }))}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none" />
+                    <input type="time" value={newTimeOff.end} onChange={e => setNewTimeOff(p => ({ ...p, end: e.target.value }))}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none" />
+                    <input type="text" placeholder="Motivo" value={newTimeOff.reason} onChange={e => setNewTimeOff(p => ({ ...p, reason: e.target.value }))}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-amber-500 focus:outline-none flex-1 min-w-[120px]" />
+                    <button onClick={addTimeOff} className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-black hover:bg-amber-400 transition-colors">Agregar</button>
+                  </div>
+                  {timeOffs.length === 0 ? <p className="text-xs text-zinc-600">Sin bloqueos programados</p> : (
+                    <div className="space-y-1.5">
+                      {timeOffs.map(t => (
+                        <div key={t.id} className="flex items-center justify-between rounded-lg bg-zinc-800/50 px-4 py-2.5">
+                          <div>
+                            <p className="text-sm text-white">{new Date(t.starts_at).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })} · {new Date(t.starts_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })} - {new Date(t.ends_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })}</p>
+                            {t.reason && <p className="text-xs text-zinc-500">{t.reason}</p>}
+                          </div>
+                          <button onClick={() => deleteTimeOff(t.id)} className="text-xs text-red-400 hover:text-red-300">Eliminar</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Shop Closures */}
+                <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6">
+                  <h3 className="text-sm font-semibold text-white mb-4">Días de Cierre</h3>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <input type="date" value={newClosure.date} onChange={e => setNewClosure(p => ({ ...p, date: e.target.value }))}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none" />
+                    <input type="text" placeholder="Motivo (ej: Festivo)" value={newClosure.reason} onChange={e => setNewClosure(p => ({ ...p, reason: e.target.value }))}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-amber-500 focus:outline-none flex-1 min-w-[120px]" />
+                    <button onClick={addClosure} className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-black hover:bg-amber-400 transition-colors">Agregar</button>
+                  </div>
+                  {closures.length === 0 ? <p className="text-xs text-zinc-600">Sin días de cierre programados</p> : (
+                    <div className="space-y-1.5">
+                      {closures.map(c => (
+                        <div key={c.id} className="flex items-center justify-between rounded-lg bg-zinc-800/50 px-4 py-2.5">
+                          <div>
+                            <p className="text-sm text-white">{c.closure_date}</p>
+                            {c.reason && <p className="text-xs text-zinc-500">{c.reason}</p>}
+                          </div>
+                          <button onClick={() => deleteClosure(c.id)} className="text-xs text-red-400 hover:text-red-300">Eliminar</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-16"><div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" /><p className="text-sm text-zinc-500 mt-3">Cargando citas...</p></div>
