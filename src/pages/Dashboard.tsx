@@ -160,20 +160,33 @@ export default function Dashboard() {
   const historyApts = allApts.filter(a => ['completed', 'cancelled'].includes(a.status))
     .filter(a => !historyFilter || a.client.toLowerCase().includes(historyFilter.toLowerCase()) || a.service.toLowerCase().includes(historyFilter.toLowerCase()))
 
-  function updateApt(id: string, update: Partial<Apt>) {
-    setTodayApts(p => p.map(a => a.id === id ? { ...a, ...update } : a))
-    setUpcomingApts(p => p.map(a => a.id === id ? { ...a, ...update } : a))
+  async function updateAptStatus(id: string, status: string, reason?: string) {
+    setTodayApts(p => p.map(a => a.id === id ? { ...a, status: status as Status } : a))
+    setUpcomingApts(p => p.map(a => a.id === id ? { ...a, status: status as Status } : a))
+    try {
+      await fetch(`${API_URL}/public/dashboard/appointments/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-shop-id': SHOP_ID },
+        body: JSON.stringify({ status, reason }),
+      })
+    } catch { /* optimistic UI, will sync on next poll */ }
   }
 
-  function deleteApt(id: string) {
+  async function deleteApt(id: string) {
     setTodayApts(p => p.filter(a => a.id !== id))
     setUpcomingApts(p => p.filter(a => a.id !== id))
-    setToast('Cita eliminada correctamente')
+    setToast('Cita eliminada')
+    try {
+      await fetch(`${API_URL}/public/dashboard/appointments/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-shop-id': SHOP_ID },
+      })
+    } catch { /* optimistic UI */ }
   }
 
   function confirmCancel() {
     if (!cancelModal || !cancelReason.trim()) return
-    updateApt(cancelModal.id, { status: 'cancelled', cancelReason: cancelReason.trim() })
+    updateAptStatus(cancelModal.id, 'cancelled', cancelReason.trim())
     setToast(`Cita de ${cancelModal.client} cancelada`)
     setCancelModal(null)
     setCancelReason('')
@@ -322,12 +335,12 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge status={apt.status} />
                       {apt.status === 'pending' && (
-                        <button onClick={() => { updateApt(apt.id, { status: 'confirmed' }); setToast(`${apt.client} confirmada`) }}
+                        <button onClick={() => { updateAptStatus(apt.id, 'confirmed'); setToast(`${apt.client} confirmada`) }}
                           className="rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 hover:bg-emerald-500/20 transition-colors">Confirmar</button>
                       )}
                       {['confirmed', 'pending'].includes(apt.status) && (
                         <>
-                          <button onClick={() => { updateApt(apt.id, { status: 'completed' }); setToast(`${apt.client} completada`) }}
+                          <button onClick={() => { updateAptStatus(apt.id, 'completed'); setToast(`${apt.client} completada`) }}
                             className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors">Completar</button>
                           <button onClick={() => setCancelModal(apt)}
                             className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 transition-colors">Cancelar</button>
