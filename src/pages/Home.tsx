@@ -260,7 +260,7 @@ export default function Home() {
       </section>
 
       {/* ═══ 7 · VIDEO DEMO — OSCURA ═══ */}
-      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden bg-[#0D0D0D]">
+      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden bg-[#0D0D0D] pt-20 pb-20">
         <video
           ref={videoRef}
           // TODO: reemplazar con pagina.mp4 cuando esté disponible

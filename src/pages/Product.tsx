@@ -51,7 +51,7 @@ export default function Product() {
           {/* ── Gallery ── */}
           <div>
             <div
-              className="mb-4 cursor-pointer overflow-hidden border border-[#E8E4DF] bg-[#F5F2EE] rounded"
+              className="mb-4 aspect-square cursor-pointer overflow-hidden border border-[#E8E4DF] rounded"
               onClick={() => setLightbox(selected)}
             >
               {current.type === 'video' ? (
@@ -59,14 +59,14 @@ export default function Product() {
                   src={current.src}
                   controls
                   playsInline
-                  className="mx-auto h-80 w-full object-contain sm:h-[420px]"
+                  className="h-full w-full object-cover"
                   onClick={e => e.stopPropagation()}
                 />
               ) : (
                 <img
                   src={current.src}
                   alt={PRODUCT.name}
-                  className="mx-auto h-80 w-full object-contain p-4 sm:h-[420px]"
+                  className="h-full w-full object-cover"
                 />
               )}
             </div>
@@ -91,7 +91,7 @@ export default function Product() {
                       </div>
                     </>
                   ) : (
-                    <img src={item.src} alt="" className="h-full w-full object-contain p-1" />
+                    <img src={item.src} alt="" className="h-full w-full object-cover" />
                   )}
                 </button>
               ))}
