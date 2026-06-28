@@ -4,7 +4,7 @@ export const PRODUCT: Product = {
   id: 'chargly-pb-10000',
   name: 'Mini Magnetic Wireless Power Bank 10000mAh',
   brand: 'Chargly',
-  price: 29.99,
+  price: 1.00,
   comparePrice: 59.99,
   currency: 'USD',
   description:
