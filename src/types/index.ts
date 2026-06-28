@@ -9,6 +9,7 @@ export interface Product {
   features: string[]
   specs: Record<string, string>
   images: string[]
+  videos?: string[]
 }
 
 export interface CartItem {

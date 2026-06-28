@@ -1,14 +1,35 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { PRODUCT } from '../data/product'
 
+type GalleryItem = { type: 'video'; src: string } | { type: 'image'; src: string }
+
+function buildGallery(): GalleryItem[] {
+  const items: GalleryItem[] = []
+  if (PRODUCT.videos) {
+    for (const v of PRODUCT.videos) items.push({ type: 'video', src: v })
+  }
+  for (const img of PRODUCT.images) items.push({ type: 'image', src: img })
+  return items
+}
+
+const GALLERY = buildGallery()
+
 export default function Product() {
-  const [selectedImg, setSelectedImg] = useState(0)
+  const [selected, setSelected] = useState(0)
+  const [lightbox, setLightbox] = useState<number | null>(null)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const { addItem } = useCart()
   const navigate = useNavigate()
+  const thumbRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!thumbRef.current) return
+    const btn = thumbRef.current.children[selected] as HTMLElement | undefined
+    btn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [selected])
 
   function handleAdd() {
     addItem(PRODUCT, qty)
@@ -21,29 +42,58 @@ export default function Product() {
     navigate('/cart')
   }
 
+  const current = GALLERY[selected]
+
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-6xl px-5 py-10 md:py-16">
         <div className="grid gap-10 md:grid-cols-2 lg:gap-16">
           {/* ── Gallery ── */}
           <div>
-            <div className="mb-4 overflow-hidden rounded-2xl bg-zinc-50 border border-zinc-100">
-              <img
-                src={PRODUCT.images[selectedImg]}
-                alt={PRODUCT.name}
-                className="mx-auto h-80 w-full object-contain p-6 sm:h-[420px]"
-              />
+            <div
+              className="mb-4 cursor-pointer overflow-hidden rounded-2xl bg-zinc-50 border border-zinc-100"
+              onClick={() => setLightbox(selected)}
+            >
+              {current.type === 'video' ? (
+                <video
+                  src={current.src}
+                  controls
+                  playsInline
+                  className="mx-auto h-80 w-full object-contain sm:h-[420px]"
+                  onClick={e => e.stopPropagation()}
+                />
+              ) : (
+                <img
+                  src={current.src}
+                  alt={PRODUCT.name}
+                  className="mx-auto h-80 w-full object-contain p-4 sm:h-[420px]"
+                />
+              )}
             </div>
-            <div className="flex gap-3">
-              {PRODUCT.images.map((img, i) => (
+
+            {/* Thumbnail strip */}
+            <div ref={thumbRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              {GALLERY.map((item, i) => (
                 <button
                   key={i}
-                  onClick={() => setSelectedImg(i)}
-                  className={`flex-1 overflow-hidden rounded-xl border-2 bg-zinc-50 p-2 transition-colors ${
-                    i === selectedImg ? 'border-accent-500' : 'border-zinc-100 hover:border-zinc-300'
+                  onClick={() => setSelected(i)}
+                  className={`relative flex-shrink-0 overflow-hidden rounded-xl border-2 bg-zinc-50 transition-colors ${
+                    i === selected ? 'border-accent-500' : 'border-zinc-100 hover:border-zinc-300'
                   }`}
+                  style={{ width: 72, height: 72 }}
                 >
-                  <img src={img} alt="" className="h-16 w-full object-contain sm:h-20" />
+                  {item.type === 'video' ? (
+                    <>
+                      <video src={item.src} muted className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <svg className="h-5 w-5 text-white drop-shadow" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                      </div>
+                    </>
+                  ) : (
+                    <img src={item.src} alt="" className="h-full w-full object-contain p-1" />
+                  )}
                 </button>
               ))}
             </div>
@@ -156,6 +206,63 @@ export default function Product() {
           </div>
         </div>
       </div>
+
+      {/* ── Lightbox ── */}
+      {lightbox !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+            onClick={() => setLightbox(null)}
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Prev / Next */}
+          {lightbox > 0 && (
+            <button
+              className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+              onClick={e => { e.stopPropagation(); setLightbox(lightbox - 1) }}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+          )}
+          {lightbox < GALLERY.length - 1 && (
+            <button
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+              onClick={e => { e.stopPropagation(); setLightbox(lightbox + 1) }}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </button>
+          )}
+
+          <div className="max-h-[85vh] max-w-[90vw]" onClick={e => e.stopPropagation()}>
+            {GALLERY[lightbox].type === 'video' ? (
+              <video
+                src={GALLERY[lightbox].src}
+                controls
+                autoPlay
+                playsInline
+                className="max-h-[85vh] max-w-[90vw] rounded-xl"
+              />
+            ) : (
+              <img
+                src={GALLERY[lightbox].src}
+                alt={PRODUCT.name}
+                className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain"
+              />
+            )}
+          </div>
+
+          <div className="absolute bottom-4 text-sm text-white/60">
+            {lightbox + 1} / {GALLERY.length}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
