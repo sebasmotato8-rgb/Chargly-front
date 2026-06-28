@@ -4,7 +4,7 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import { useCart } from '../context/CartContext'
 import type { OrderData } from '../types'
 
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'sb'
+const PAYPAL_CLIENT_ID = 'AVSDW6oO4sd17w6zB1T8R0THjAYbbeGC5fAahSyNykPX3GMP6IdDbWOMhZcFep_b5nW_eMVRNkYbdD_N'
 
 function OrderConfirmation({ orderId }: { orderId: string }) {
   return (
@@ -91,7 +91,7 @@ export default function Checkout() {
   ]
 
   return (
-    <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD' }}>
+    <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'capture' }}>
       <div className="min-h-screen bg-white">
         <div className="mx-auto max-w-5xl px-5 py-10 md:py-16">
           <h1 className="text-2xl font-bold mb-8">Checkout</h1>
