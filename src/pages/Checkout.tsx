@@ -4,8 +4,7 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import { useCart } from '../context/CartContext'
 import type { OrderData } from '../types'
 
-// LIVE: AVSDW6oO4sd17w6zB1T8R0THjAYbbeGC5fAahSyNykPX3GMP6IdDbWOMhZcFep_b5nW_eMVRNkYbdD_N
-const PAYPAL_CLIENT_ID = 'sb'
+const PAYPAL_CLIENT_ID = 'AVSDW6oO4sd17w6zB1T8R0THjAYbbeGC5fAahSyNykPX3GMP6IdDbWOMhZcFep_b5nW_eMVRNkYbdD_N'
 
 function OrderConfirmation({ orderId }: { orderId: string }) {
   return (
