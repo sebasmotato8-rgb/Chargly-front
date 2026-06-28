@@ -92,7 +92,7 @@ export default function Checkout() {
   ]
 
   return (
-    <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'capture' }}>
+    <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'capture', 'disable-funding': 'credit,card', 'enable-funding': 'paypal' }}>
       <div className="min-h-screen bg-[#FAFAF8]">
         <div className="mx-auto max-w-5xl px-6 py-10 md:py-16">
           <h1 className="font-display text-3xl tracking-tight text-[#1a1a1a] mb-8">CHECKOUT</h1>
