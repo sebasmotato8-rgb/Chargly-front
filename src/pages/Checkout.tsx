@@ -41,6 +41,7 @@ export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
   const navigate = useNavigate()
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
   const [form, setForm] = useState<OrderData>({
     name: '', email: '', address: '', city: '', country: '', phone: '',
   })
@@ -123,10 +124,20 @@ export default function Checkout() {
               <div className="mt-6">
                 <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-[#888880] mb-4">Método de pago</h2>
                 <div className="border border-[#E8E4DF] bg-[#F5F2EE] p-5 rounded">
+                  {paymentError && (
+                    <div className="mb-4 border border-red-200 bg-red-50 p-4 rounded">
+                      <p className="text-sm font-medium text-red-700">{paymentError}</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        Intenta de nuevo o contáctanos en{' '}
+                        <a href="mailto:soporte@chargly.shop" className="underline">soporte@chargly.shop</a>
+                      </p>
+                    </div>
+                  )}
                   {isFormValid ? (
                     <PayPalButtons
                       style={{ layout: 'vertical', shape: 'rect', color: 'gold', label: 'pay' }}
                       createOrder={(_data, actions) => {
+                        setPaymentError(null)
                         if (!validate()) return Promise.reject(new Error('Formulario inválido'))
                         return actions.order.create({
                           intent: 'CAPTURE',
@@ -145,12 +156,19 @@ export default function Checkout() {
                         })
                       }}
                       onApprove={async (_data, actions) => {
-                        const details = await actions.order!.capture()
-                        setConfirmedOrderId(details.id ?? crypto.randomUUID().slice(0, 8).toUpperCase())
-                        clearCart()
+                        try {
+                          const details = await actions.order!.capture()
+                          setConfirmedOrderId(details.id ?? crypto.randomUUID().slice(0, 8).toUpperCase())
+                          clearCart()
+                        } catch {
+                          setPaymentError('No se pudo completar el pago. Tu tarjeta o cuenta de PayPal pudo haber sido rechazada.')
+                        }
+                      }}
+                      onCancel={() => {
+                        setPaymentError('Pago cancelado. Puedes intentarlo de nuevo cuando quieras.')
                       }}
                       onError={() => {
-                        navigate('/cart')
+                        setPaymentError('Hubo un problema con el pago. Verifica tu método de pago e intenta de nuevo.')
                       }}
                     />
                   ) : (
